@@ -16,6 +16,8 @@
 #' @param partial_slides Should partial (continuation) slides be
 #' included in the output? If `FALSE`, the default, only the complete slide
 #' is included in the PDF.
+#' @param presenter_mode Build the slides in presenter mode? Requires a local
+#' installation of Chrome. Defaults to `FALSE`.
 #' @param delay Seconds of delay between advancing to and printing
 #' a new slide. Only used if `complex_slides = TRUE` or `partial_slides =
 #' TRUE`.
@@ -51,6 +53,7 @@ build_pdf <- function(
   output_file = NULL,
   complex_slides = FALSE,
   partial_slides = FALSE,
+  presenter_mode = FALSE,
   delay = 1
 ) {
     # Check if Chrome is installed
@@ -73,8 +76,9 @@ build_pdf <- function(
         input <- fs::path_ext_set(input, "html")
     }
 
-    if (complex_slides | partial_slides) {
-        build_pdf_complex(input, output_file, partial_slides, delay)
+    if (complex_slides | partial_slides | presenter_mode) {
+        build_pdf_complex(
+          input, output_file, partial_slides, presenter_mode, delay)
     } else {
         build_pdf_simple(input, output_file)
     }
@@ -115,7 +119,13 @@ build_pdf_simple <- function(input, output_file) {
 #' is included in the PDF.
 #' @param delay Seconds of delay between advancing to and printing
 #' a new slide.
-build_pdf_complex <- function(input, output_file, partial_slides, delay) {
+build_pdf_complex <- function(
+  input,
+  output_file,
+  partial_slides,
+  presenter_mode,
+  delay
+) {
   if (!requireNamespace("chromote", quietly = TRUE)) {
     stop("`chromote` is required: devtools::install_github('rstudio/chromote')")
   }
@@ -138,6 +148,10 @@ build_pdf_complex <- function(input, output_file, partial_slides, delay) {
       stop("`input` must be the HTML version of the slides.")
     }
     input <- paste0("file://", fs::path_abs(input))
+  }
+
+  if (presenter_mode) {
+    input <- paste0(input, "#p1")
   }
 
   b <- chromote::ChromoteSession$new()
